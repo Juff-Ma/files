@@ -1,0 +1,112 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.IO;
+using System.Collections;
+
+namespace XOR_test
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            BitArray XorList = GetXORList(@"C:\test.txt");
+            byte[] bytelist = BitArrayToByteArray(XorList);
+
+            File.WriteAllBytes(@"C:\test2.txt", bytelist);
+        }
+
+        private static byte[] GetBytes(string FilePath)
+        {
+            byte[] fileInbytes;
+            FileStream fileStream = null;
+            try
+            {
+                fileStream = new FileStream(FilePath, FileMode.Open, FileAccess.Read);
+            }
+            catch (FileNotFoundException ex)
+            {
+                Console.WriteLine("File is not found");
+                return null;
+            }
+            catch (Exception exc)
+            {
+                Console.WriteLine(exc.Message);
+                return null;
+            }
+
+            int FileStreamLength = (int)fileStream.Length; // total number of bytes read
+            int numBytesReadPosition = 0;  // actual number of bytes read
+
+            fileInbytes = new byte[FileStreamLength];
+
+            while (FileStreamLength > 0)
+            {
+                // Read may return anything from 0 to numBytesToRead.
+                int n = fileStream.Read(fileInbytes, numBytesReadPosition, FileStreamLength);
+                // Break when the end of the file is reached.
+                if (n == 0)
+                    break;
+                numBytesReadPosition += n;
+                FileStreamLength -= n;
+            }
+            return fileInbytes;
+        }
+
+        private static bool[] GetTFByte(byte b)
+        {
+            bool[] byteTF = new bool[8];
+
+            for (int i = 1; i <= 8; i++)
+            {
+                bool bitTF = (b & (1 << i - 1)) != 0;
+                byteTF[i - 1] = bitTF;
+            }
+
+            return byteTF;
+        }
+
+        private static int[] Get01Byte(byte b)
+        {
+            bool[] byteTF = GetTFByte(b);
+            int currentBit = 0;
+            int[] byte01 = new int[8];
+            foreach (bool bitTF in byteTF)
+            {
+                currentBit++;
+                if (bitTF == true)
+                {
+                    byte01[currentBit - 1] = 1;
+                }
+                else
+                {
+                    byte01[currentBit - 1] = 0;
+                }
+            }
+            return byte01;
+        }
+
+        private static BitArray GetXORList(string path)
+        {
+            List<int> xorList = new List<int>();
+            byte[] bytes = GetBytes(path);
+            foreach (byte b in bytes)
+            {
+                foreach (int Bit in Get01Byte(b))
+                {
+                    xorList.Add(Bit);
+                }
+            }
+            BitArray end = new BitArray(xorList.ToArray());
+            return end;
+        }
+
+        private static byte[] BitArrayToByteArray(BitArray bits)
+        {
+            byte[] ret = new byte[(bits.Length - 1) / 8 + 1];
+            bits.CopyTo(ret, 0);
+            return ret;
+        }
+    }
+}
